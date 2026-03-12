@@ -1,0 +1,211 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Calculator</title>
+<link href="https://fonts.googleapis.com/css2?family=Share+Tech+Mono&family=Rubik:wght@300;400;500;700&display=swap" rel="stylesheet">
+<style>
+  *, *::before, *::after { margin: 0; padding: 0; box-sizing: border-box; }
+  body {
+    font-family: 'Rubik', sans-serif;
+    background: #1a1a2e; min-height: 100vh;
+    display: flex; align-items: center; justify-content: center;
+    background-image:
+      radial-gradient(circle at 30% 30%, rgba(22,163,74,0.12) 0%, transparent 40%),
+      radial-gradient(circle at 70% 70%, rgba(234,179,8,0.08) 0%, transparent 40%);
+  }
+  .calc {
+    background: #12121f;
+    border-radius: 28px;
+    overflow: hidden;
+    box-shadow: 0 40px 80px rgba(0,0,0,0.6), 0 0 0 1px rgba(255,255,255,0.05);
+    width: 340px;
+  }
+
+  /* Display */
+  .display {
+    background: #0a0a14;
+    padding: 2rem 1.8rem 1.5rem;
+    border-bottom: 1px solid rgba(255,255,255,0.05);
+    min-height: 130px;
+    display: flex; flex-direction: column; justify-content: flex-end;
+    position: relative; overflow: hidden;
+  }
+  .display::before {
+    content: ''; position: absolute; top: 0; left: 0; right: 0;
+    height: 2px;
+    background: linear-gradient(90deg, #16a34a, #eab308, #16a34a);
+    animation: scanline 3s linear infinite;
+  }
+  @keyframes scanline { from { background-position: -340px; } to { background-position: 340px; } }
+  .expr { font-family: 'Share Tech Mono', monospace; font-size: 0.8rem; color: #4a5568; text-align: right; min-height: 1.2rem; margin-bottom: 0.5rem; letter-spacing: 0.05em; }
+  .result {
+    font-family: 'Share Tech Mono', monospace;
+    font-size: 2.8rem; color: #e2e8f0; text-align: right;
+    letter-spacing: -0.02em; transition: font-size 0.1s;
+    word-break: break-all; line-height: 1.1;
+  }
+  .result.small { font-size: 1.8rem; }
+
+  /* Buttons */
+  .buttons { padding: 1.2rem; display: grid; grid-template-columns: repeat(4, 1fr); gap: 0.6rem; }
+  .btn {
+    border: none; border-radius: 14px; font-family: 'Rubik', sans-serif;
+    font-size: 1.1rem; font-weight: 500; cursor: pointer;
+    padding: 1.1rem 0.5rem; position: relative; overflow: hidden;
+    transition: transform 0.08s, box-shadow 0.1s;
+    user-select: none;
+  }
+  .btn::after {
+    content: ''; position: absolute; inset: 0;
+    background: rgba(255,255,255,0);
+    transition: background 0.1s;
+  }
+  .btn:hover::after { background: rgba(255,255,255,0.07); }
+  .btn:active { transform: scale(0.94); }
+  .btn-num { background: #1e1e30; color: #e2e8f0; box-shadow: 0 4px 0 #0a0a14; }
+  .btn-num:active { box-shadow: 0 0 0 #0a0a14; }
+  .btn-op { background: #1a2a1f; color: #4ade80; box-shadow: 0 4px 0 #0a1208; }
+  .btn-op:active { box-shadow: 0 0 0 #0a1208; }
+  .btn-clear { background: #2a1a1a; color: #f87171; box-shadow: 0 4px 0 #120808; }
+  .btn-clear:active { box-shadow: 0 0 0 #120808; }
+  .btn-eq { background: linear-gradient(145deg, #16a34a, #15803d); color: #fff; box-shadow: 0 4px 0 #0a5c22; font-size: 1.3rem; }
+  .btn-eq:active { box-shadow: 0 0 0 #0a5c22; }
+  .btn-special { background: #1a1a30; color: #a78bfa; box-shadow: 0 4px 0 #0a0a20; font-size: 0.9rem; }
+  .btn-special:active { box-shadow: 0 0 0 #0a0a20; }
+  .btn-zero { grid-column: span 2; }
+
+  /* History */
+  .history { padding: 0 1.2rem 1rem; }
+  .history-title { font-size: 0.6rem; letter-spacing: 0.2em; text-transform: uppercase; color: #2d3748; margin-bottom: 0.5rem; }
+  .history-items { list-style: none; max-height: 80px; overflow-y: auto; }
+  .history-item { font-family: 'Share Tech Mono', monospace; font-size: 0.72rem; color: #4a5568; padding: 0.2rem 0; text-align: right; cursor: pointer; transition: color 0.15s; }
+  .history-item:hover { color: #a78bfa; }
+</style>
+</head>
+<body>
+<div class="calc">
+  <div class="display">
+    <div class="expr" id="expr"></div>
+    <div class="result" id="result">0</div>
+  </div>
+
+  <div class="history">
+    <div class="history-title">History</div>
+    <ul class="history-items" id="historyList"></ul>
+  </div>
+
+  <div class="buttons">
+    <button class="btn btn-clear" onclick="clearAll()">AC</button>
+    <button class="btn btn-special" onclick="toggleSign()">+/−</button>
+    <button class="btn btn-special" onclick="percent()">%</button>
+    <button class="btn btn-op" onclick="op('/')">÷</button>
+
+    <button class="btn btn-num" onclick="num('7')">7</button>
+    <button class="btn btn-num" onclick="num('8')">8</button>
+    <button class="btn btn-num" onclick="num('9')">9</button>
+    <button class="btn btn-op" onclick="op('*')">×</button>
+
+    <button class="btn btn-num" onclick="num('4')">4</button>
+    <button class="btn btn-num" onclick="num('5')">5</button>
+    <button class="btn btn-num" onclick="num('6')">6</button>
+    <button class="btn btn-op" onclick="op('-')">−</button>
+
+    <button class="btn btn-num" onclick="num('1')">1</button>
+    <button class="btn btn-num" onclick="num('2')">2</button>
+    <button class="btn btn-num" onclick="num('3')">3</button>
+    <button class="btn btn-op" onclick="op('+')">+</button>
+
+    <button class="btn btn-num btn-zero" onclick="num('0')">0</button>
+    <button class="btn btn-num" onclick="dot()">.</button>
+    <button class="btn btn-eq" onclick="equals()">=</button>
+  </div>
+</div>
+
+<script>
+  let current = '0', expr = '', operator = null, prev = null, fresh = false;
+  let history = [];
+
+  function updateDisplay() {
+    const r = document.getElementById('result');
+    r.textContent = current;
+    r.className = 'result' + (current.length > 9 ? ' small' : '');
+    document.getElementById('expr').textContent = expr;
+  }
+
+  function num(n) {
+    if (fresh) { current = n; fresh = false; }
+    else current = current === '0' ? n : current + n;
+    updateDisplay();
+  }
+
+  function dot() {
+    if (fresh) { current = '0.'; fresh = false; }
+    else if (!current.includes('.')) current += '.';
+    updateDisplay();
+  }
+
+  function op(o) {
+    if (operator && !fresh) compute();
+    prev = parseFloat(current);
+    operator = o;
+    const sym = {'+':'+', '-':'−', '*':'×', '/':'÷'}[o];
+    expr = `${current} ${sym}`;
+    fresh = true;
+    updateDisplay();
+  }
+
+  function compute() {
+    if (operator === null || prev === null) return;
+    const cur = parseFloat(current);
+    let res;
+    switch (operator) {
+      case '+': res = prev + cur; break;
+      case '-': res = prev - cur; break;
+      case '*': res = prev * cur; break;
+      case '/': res = cur === 0 ? 'Error' : prev / cur; break;
+    }
+    const sym = {'+':'+', '-':'−', '*':'×', '/':'÷'}[operator];
+    const histEntry = `${prev} ${sym} ${cur} = ${res}`;
+    if (history[0] !== histEntry) {
+      history.unshift(histEntry);
+      if (history.length > 6) history.pop();
+      renderHistory();
+    }
+    expr = histEntry;
+    current = res === 'Error' ? 'Error' : String(parseFloat(res.toFixed(10)));
+    operator = null; prev = null; fresh = true;
+    updateDisplay();
+  }
+
+  function equals() { compute(); expr = ''; }
+  function clearAll() { current = '0'; expr = ''; operator = null; prev = null; fresh = false; updateDisplay(); }
+  function toggleSign() { if (current !== '0' && current !== 'Error') { current = current.startsWith('-') ? current.slice(1) : '-' + current; updateDisplay(); } }
+  function percent() { if (!isNaN(current)) { current = String(parseFloat(current) / 100); updateDisplay(); } }
+
+  function renderHistory() {
+    document.getElementById('historyList').innerHTML = history.map(h =>
+      `<li class="history-item" onclick="loadHistory('${h}')">${h}</li>`
+    ).join('');
+  }
+
+  function loadHistory(h) {
+    const parts = h.split(' = ');
+    if (parts[1]) { current = parts[1]; expr = parts[0] + ' ='; fresh = true; updateDisplay(); }
+  }
+
+  // Keyboard support
+  document.addEventListener('keydown', e => {
+    if ('0123456789'.includes(e.key)) num(e.key);
+    else if (e.key === '.') dot();
+    else if (['+','-','*','/'].includes(e.key)) op(e.key);
+    else if (e.key === 'Enter' || e.key === '=') equals();
+    else if (e.key === 'Backspace') { if (current.length > 1) current = current.slice(0,-1); else current = '0'; updateDisplay(); }
+    else if (e.key === 'Escape') clearAll();
+  });
+
+  updateDisplay();
+</script>
+</body>
+</html>
